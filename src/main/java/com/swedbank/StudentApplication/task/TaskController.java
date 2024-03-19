@@ -1,5 +1,8 @@
 package com.swedbank.StudentApplication.task;
 
+import com.swedbank.StudentApplication.group.Group;
+import com.swedbank.StudentApplication.group.GroupService;
+import com.swedbank.StudentApplication.group.exception.GroupNotFoundException;
 import com.swedbank.StudentApplication.task.exceptiion.TaskNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -14,23 +17,29 @@ import java.util.Optional;
 @RequestMapping("/api/tasks")
 public class TaskController {
 
-    private TaskService service;
+    private final TaskService taskService;
+    private final GroupService groupService;
 
     @Autowired
-    public TaskController(TaskService service) {
-        this.service = service;
+    public TaskController(TaskService service, GroupService groupService) {
+        this.taskService = service;
+        this.groupService = groupService;
     }
 
     @GetMapping()
-    public ResponseEntity<List<Task>> getAllTasks() {
-        List<Task> tasks = service.findAll();
+    public ResponseEntity<List<Task>> getAllTasks(@RequestParam Optional<Long> groupId) throws GroupNotFoundException {
+        if (groupId.isPresent()) {
+            Group group = groupService.findById(groupId.get());
 
-        return ResponseEntity.ok(tasks);
+            return ResponseEntity.ok(taskService.findTasksByGroup(group));
+        }
+
+        return ResponseEntity.ok(taskService.findAll());
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Task> getTaskById(@PathVariable long id) throws TaskNotFoundException {
-        Task task = service.findById(id);
+        Task task = taskService.findById(id);
 
         return new ResponseEntity<>(task, HttpStatus.OK);
     }
@@ -41,7 +50,7 @@ public class TaskController {
         Task task = new Task(taskRequest.getShortDesc(), taskRequest.getDetails(), taskRequest.getStartDate(),
                 taskRequest.getEndDate());
 
-        service.save(task);
+        taskService.save(task);
 
         return new ResponseEntity<>(task, HttpStatus.OK);
     }
@@ -49,14 +58,25 @@ public class TaskController {
     @PatchMapping("/update")
     public ResponseEntity<String> updateTask(@RequestBody Task taskData) throws TaskNotFoundException
     {
-        service.update(taskData);
+        taskService.update(taskData);
 
         return new ResponseEntity<>("Task updated successfully.", HttpStatus.OK);
     }
 
+    @PatchMapping("/{id}/set-group")
+    public ResponseEntity<String> setTaskGroup(@PathVariable long id, @RequestParam long groupId) {
+        Task task = taskService.findById(id);
+        Group group = groupService.findById(groupId);
+
+        task.setGroup(group);
+        taskService.update(task);
+
+        return new ResponseEntity<>("Task has been assigned to a group successfully.", HttpStatus.OK);
+    }
+
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deleteTask(@PathVariable long id) throws TaskNotFoundException {
-        service.delete(id);
+        taskService.delete(id);
 
         return new ResponseEntity<>("Task deleted.", HttpStatus.OK);
     }

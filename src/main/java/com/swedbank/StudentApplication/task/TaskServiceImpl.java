@@ -1,5 +1,7 @@
 package com.swedbank.StudentApplication.task;
 
+import com.swedbank.StudentApplication.group.Group;
+import com.swedbank.StudentApplication.group.exception.GroupNotFoundException;
 import com.swedbank.StudentApplication.task.exceptiion.TaskExistsException;
 import com.swedbank.StudentApplication.task.exceptiion.TaskNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class TaskServiceImpl implements  TaskService{
+public class TaskServiceImpl implements  TaskService {
 
     private TaskRepository repository;
 
@@ -52,6 +54,12 @@ public class TaskServiceImpl implements  TaskService{
         } else {
             throw new TaskNotFoundException(taskId);
         }
+    }
+
+    @Override
+    public List<Task> findTasksByGroup(Group group) throws TaskNotFoundException, GroupNotFoundException
+    {
+        return repository.findTasksByGroup(group);
     }
 
     @Override
